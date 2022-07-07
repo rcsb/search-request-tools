@@ -1,0 +1,23 @@
+{
+  "name": "@rcsb/search-request-tools",
+  "version": "1.0.1",
+  "description": "Functions to modify a Search API request",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://rlowe55@github.com/rcsb/search-request-tools.git"
+  },
+  "keywords": [
+    "search",
+    "api"
+  ],
+  "author": "robert.lowe@rcsb.org",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rcsb/search-request-tools/issues"
+  },
+  "homepage": "https://github.com/rcsb/search-request-tools#readme"
+}
