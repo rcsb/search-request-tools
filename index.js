@@ -3,7 +3,7 @@
     npm publish
 */
 
-/**
+/*
  * Module exports.
  * @public
  */
@@ -24,7 +24,7 @@ const LOG_PREFIX = 'RO-3185 search-request'
     , LABEL_GROUPS_REFINEMENTS = 'groups-refinements'
     , LABEL_NESTED_ATTRIBUTE = 'nested-attribute'
 
-/**
+/*
  * Add a refinement node to an existing Search API request. The refinement node will be added to an existing
  * LABEL_GROUPS_REFINEMENTS node. If no LABEL_GROUPS_REFINEMENTS node is found, a new one will be created. The
  * refinement node will NOT be added if a matching attribute/value pair is found.
@@ -126,7 +126,7 @@ function addRefinement (request, node, schema = 'structure', service = 'text') {
     }
 }
 
-/**
+/*
 * Add a refinements node to an existing Search API request. Each call to this function will append a new
 * refinement node to the existing request. The 'refinements' input parameter is typically derived from
 * user selections in the Search UI Refinement Panel.
@@ -256,7 +256,7 @@ function getTerminalNode(service, parameters) {
     }
 }
 
-/**
+/*
 * Add refinement to the Search API request.
 *
 * @param {string} service
@@ -312,7 +312,7 @@ function setAttributeNode(service, attributeNode, refinement) {
     //log(attributeNode, 'setAttributeNode: attributeNode')
 }
 
-/**
+/*
  * Return a group node representing a refinement that has a facetFilter.
  *
  * @param {string} schema

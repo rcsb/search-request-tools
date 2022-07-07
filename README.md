@@ -3,15 +3,15 @@ npm module containing shared components for search
 
 ## Installation
 ```sh
-npm i search-request-tools
+npm i @rcsb/search-request-tools
 ```
 ## Usage
 ### Javascript
 
 ```javascript
-import searchRequestTools from 'search-request-tools'
+import searchRequestTools from '@rcsb/search-request-tools'
 /* OR */
-const searchRequestTools = require('search-request-tools')
+const searchRequestTools = require('@rcsb/search-request-tools')
 ```
 #### addRefinement(request, node)
 Add a single refinement node to an existing Search API request object. The request.query may be of type 'terminal' or 'group'.
@@ -21,7 +21,7 @@ This function is called primarily from the 'groups' landing page. Examples:
 ##### Add a terminal node for a single attribute:
 
 ```javascript
-const searchRequestTools = require('search-request-tools');
+const searchRequestTools = require('@rcsb/search-request-tools');
 const request = { ... } // existing Search API request object
 const node = {
         "type": "terminal",
