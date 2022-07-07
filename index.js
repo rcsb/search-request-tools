@@ -1,6 +1,11 @@
 /*
-    cd ./search-request
+    cd ~/projects/search-request-tools
     npm publish
+
+    note: first time publishing use
+        > npm publish --access=public
+
+        (default is private)
 */
 
 /*
@@ -11,6 +16,8 @@
     addRefinement
   , addRefinements
 }
+
+
 
 const LOG_PREFIX = 'RO-3185 search-request'
     , GROUP = 'group'
