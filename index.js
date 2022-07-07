@@ -18,7 +18,6 @@
 }
 
 
-
 const LOG_PREFIX = 'RO-3185 search-request'
     , GROUP = 'group'
     , TERMINAL = 'terminal'
