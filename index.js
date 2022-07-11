@@ -88,23 +88,16 @@ const LOG_PREFIX = 'RO-3185 search-request'
         }
 */
 function addRefinement (request, node, schema = 'structure', service = 'text') {
+    const { type } = node
+      , { query } = request
+
     let serviceNode, refinementNode, attributeNode
 
-    if (request.query.type === 'terminal') { // outer node is of type 'terminal'
-        const terminalNode = request.query // extract the terminalNode from the request
-        request.query = getEmptyGroupNode(null, AND) // reset request.query to be a group node
-        serviceNode = getGroupNode(request.query, service, AND) // add the serviceNode to request.query
+    serviceNode = getGroupNode(query, service, AND)
 
-        const innerGroupNode = getEmptyGroupNode(null, AND) // create innerGroupNode
-        innerGroupNode.nodes.push(terminalNode) // add terminalNode to innerGroupNode
-        serviceNode.nodes.push(innerGroupNode)  // add innerGroupNode to serviceNode
-    } else {
-        serviceNode = getGroupNode(request.query, service, AND)
-    }
+    refinementNode = getGroupNode(serviceNode, LABEL_GROUPS_REFINEMENTS, AND)
 
-    refinementNode = getGroupNode(serviceNode, LABEL_GROUPS_REFINEMENTS, AND) // add refinementNode to serviceNode
-
-    if (node.type === TERMINAL) {
+    if (type === TERMINAL) {
         const { attribute, value } = node.parameters
 
         attributeNode = getGroupNode(refinementNode, attribute, OR)
@@ -123,7 +116,7 @@ function addRefinement (request, node, schema = 'structure', service = 'text') {
 
         if (!found) {
             const attrObj = metadata[schema].uiAttrMap[attribute]
-                , nested_attribute = node.nodes[1].parameters.attribute
+              , nested_attribute = node.nodes[1].parameters.attribute
 
             if (attrObj && attrObj.nestedAttribute && attrObj.nestedAttribute.attribute === nested_attribute) node.label = LABEL_NESTED_ATTRIBUTE
 
@@ -131,6 +124,7 @@ function addRefinement (request, node, schema = 'structure', service = 'text') {
         }
     }
 }
+
 
 /*
 * Add a refinements node to an existing Search API request. Each call to this function will append a new
@@ -190,11 +184,11 @@ function addRefinement (request, node, schema = 'structure', service = 'text') {
 */
 function addRefinements (request, refinements, result_type = 'entry') {
     const { query } = request
-        , schema = (result_type === 'mol_definition') ? 'chemical' : 'structure'
-        , service = (result_type === 'mol_definition') ? 'text_chem' : 'text'
+      , schema = (result_type === 'mol_definition') ? 'chemical' : 'structure'
+      , service = (result_type === 'mol_definition') ? 'text_chem' : 'text'
 
-    //log(result_type, 'result_type')
-    //log(service, 'service')
+    // log(result_type, 'result_type')
+    // log(service, 'service')
 
     let serviceNode, refinementNode, attributeNode
 
@@ -208,21 +202,26 @@ function addRefinements (request, refinements, result_type = 'entry') {
     serviceNode.nodes.push(refinementNode)
 
     refinements.forEach(refinement => {
+
         const { attribute } = refinement
 
         attributeNode = getGroupNode(refinementNode, attribute, OR)
 
-        if (metadata[schema].facetFilters[attribute]) setFacetFilterAttributeNode(schema, service, attributeNode, refinement)
-        else setAttributeNode(service, attributeNode, refinement)
+        if (metadata[schema].facetFilters[attribute]) {
+            setFacetFilterAttributeNode(schema, service, attributeNode, refinement)
+        } else {
+            setAttributeNode(service, attributeNode, refinement)
+        }
     })
 }
+
 
 // private functions
 
 // return an empty group node
 function getEmptyGroupNode(label, logical_operator) {
     const node = {
-          type: GROUP
+        type: GROUP
         , nodes: []
         , logical_operator }
 
@@ -253,14 +252,16 @@ function getGroupNode(node, label, operator = AND) {
     return groupNode
 }
 
+
 // return a terminal node
 function getTerminalNode(service, parameters) {
     return {
-          type: TERMINAL
+        type: TERMINAL
         , service
         , parameters
     }
 }
+
 
 /*
 * Add refinement to the Search API request.
@@ -271,47 +272,11 @@ function getTerminalNode(service, parameters) {
 * @private
 */
 function setAttributeNode(service, attributeNode, refinement) {
+
     const { attribute, values } = refinement
 
-    let operator
-
     values.forEach(value => {
-        if (    attribute === 'rcsb_entry_info.resolution_combined' ||
-                attribute === 'chem_comp.formula_weight' ||
-                attribute === 'rcsb_chem_comp_info.atom_count_heavy' ) { // numeric - operator may be range, less, greater_or_equal
-
-            const arr = value.split('-')
-
-            if (value.indexOf('*') === 0) {
-                operator = LESS
-                value = parseFloat(arr[1])
-            } else if (value.indexOf('-*') !== -1) {
-                operator = GREATER_OR_EQUAL
-                value = parseFloat(arr[0])
-            } else {
-                operator = RANGE
-                value = {
-                        from: parseFloat(arr[0])
-                    , to: parseFloat(arr[1])
-                    , include_lower: true
-                    , include_upper: false
-                }
-            }
-        } else if ( attribute === 'rcsb_accession_info.initial_release_date' ||
-                    attribute === 'rcsb_chem_comp_info.initial_release_date' ) {
-
-            operator = 'range'
-            value = {
-                    from: value + '-01-01'
-                , to: (parseInt(value) + 4) + '-12-31'
-                , include_lower: true
-                , include_upper: true
-            }
-        } else {
-            operator = EXACT_MATCH
-        }
-
-        const parameters = { attribute, value, operator }
+        const parameters = setParameters(attribute, value)
         attributeNode.nodes.push(getTerminalNode(service, parameters))
     })
 
@@ -329,32 +294,79 @@ function setAttributeNode(service, attributeNode, refinement) {
  */
 function setFacetFilterAttributeNode(schema, service, attributeNode, refinement) {
     const { attribute, values } = refinement
-        , { uiAttrMap, facetFilters } = metadata[schema]
-        , attrObj = uiAttrMap[attribute]
-        , facetFilter = facetFilters[attribute]
-        , operator = EXACT_MATCH
+      , { uiAttrMap, facetFilters } = metadata[schema]
+      , attrObj = uiAttrMap[attribute]
+      , facetFilter = facetFilters[attribute]
 
-    //log(attrObj, 'setFacetFilterAttributeNode: attrObj')
-    //log(facetFilter, 'setFacetFilterAttributeNode: facetFilter')
+    // log(attrObj, 'setFacetFilterAttributeNode: attrObj')
+    // log(facetFilter, 'setFacetFilterAttributeNode: facetFilter')
 
-    // if (attrObj && attrObj.nestedAttribute && attrObj.nestedAttribute.attribute === facetFilter.parameters.attribute) {
-    //     log(attrObj.nestedAttribute, 'setFacetFilterAttributeNode: attrObj.nestedAttribute')
-    // }
+    if (attrObj && attrObj.nestedAttribute && attrObj.nestedAttribute.attribute === facetFilter.parameters.attribute) {
+        log(attrObj.nestedAttribute, 'setFacetFilterAttributeNode: attrObj.nestedAttribute')
+    }
 
     values.forEach(value => {
-        const groupNode = getEmptyGroupNode(null, AND)
-            , parameters = { attribute, value, operator }
 
-        groupNode.nodes.push(getTerminalNode(service, parameters))
+        const paremeters = setParameters(attribute, value)
+        const groupNode = getEmptyGroupNode(null, AND)
+
+        groupNode.nodes.push(getTerminalNode(service, paremeters))
         groupNode.nodes.push(facetFilter)
 
-        if (attrObj && attrObj.nestedAttribute && attrObj.nestedAttribute.attribute === facetFilter.parameters.attribute) groupNode.label = LABEL_NESTED_ATTRIBUTE
+        if (attrObj && attrObj.nestedAttribute && attrObj.nestedAttribute.attribute === facetFilter.parameters.attribute)
+            groupNode.label = LABEL_NESTED_ATTRIBUTE
 
         attributeNode.nodes.push(groupNode)
     })
 
-    //log(attributeNode, 'setFacetFilterAttributeNode: attributeNode AFTER TRANSFORM')
+    log(attributeNode, 'setFacetFilterAttributeNode: attributeNode AFTER TRANSFORM')
 }
+
+// return parameters object
+function setParameters(attribute, value) {
+
+    let operator
+
+    if (attribute === 'rcsb_entry_info.resolution_combined' ||
+      attribute === 'chem_comp.formula_weight' ||
+      attribute === 'rcsb_chem_comp_info.atom_count_heavy' ||
+      attribute === 'rcsb_ma_qa_metric_global.ma_qa_metric_global.value') {
+
+        const arr = value.split('-')
+
+        if (value.indexOf('*') === 0) {
+            operator = LESS
+            value = parseFloat(arr[1])
+        } else if (value.indexOf('-*') !== -1) {
+            operator = GREATER_OR_EQUAL
+            value = parseFloat(arr[0])
+        } else {
+            operator = RANGE
+            value = {
+                from: parseFloat(arr[0])
+                , to: parseFloat(arr[1])
+                , include_lower: true
+                , include_upper: false
+            }
+        }
+    } else if ( attribute === 'rcsb_accession_info.initial_release_date' ||
+      attribute === 'rcsb_chem_comp_info.initial_release_date' ) {
+
+        operator = 'range'
+        value = {
+            from: value + '-01-01'
+            , to: (parseInt(value) + 4) + '-12-31'
+            , include_lower: true
+            , include_upper: true
+        }
+    } else {
+        operator = EXACT_MATCH
+    }
+
+    const parameters = { attribute, value, operator }
+    return parameters
+}
+
 
 // utils
 
